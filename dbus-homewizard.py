@@ -16,7 +16,7 @@ from vedbus import VeDbusService
 from ve_utils import exit_on_error
 
 import logging
-log = logging.getLogger()
+logger = logging.getLogger()
 
 NAME = os.path.basename(__file__)
 VERSION = '0.1'
