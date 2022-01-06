@@ -9,6 +9,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib
+from zeroconf import ServiceBrowser, Zeroconf
 
 # Victron packages
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), './ext/velib_python'))
@@ -119,10 +120,37 @@ class EnergyMeter(object):
 		self.set_path('/Meter/Model', json['meter_model'])
 		self.set_path('/Meter/Version', json['smr_version'])
 
+class Listener:
+	def __init__(self, servicebase):
+		self.servicebase = servicebase
+
+	def remove_service(self, zeroconf, type, name):
+		"""Callback when a service is removed."""
+		logger.info('Service removed: %s => exit' % name)
+		sys.exit(1)
+
+	def update_service(self, zconf, typ, name):
+		"""Callback when a service is updated."""
+		pass
+
+	def add_service(self, zeroconf, type, name):
+		"""Callback when a service is found."""
+		logger.info('Service found: %s' % name)
+		info = zeroconf.get_service_info(type, name)
+
+		if info.properties[b'api_enabled'] != b'1':
+			logger.warning('API is not enabled')
+			return
+
+		if info.properties[b'product_type'] != b'HWE-P1':
+			logger.warning('Product not supported')
+			return
+
+		meter = EnergyMeter(self.servicebase, info.server)
+
 def main():
 	parser = ArgumentParser(add_help=True)
 	parser.add_argument('-d', '--debug', help='Enable debug logging', action='store_true')
-	parser.add_argument('host', help='Hostname or IP address of HomeWizard device')
 	parser.add_argument('--servicebase',
 		   help='Base service name on dbus, default is com.victronenergy',
 		   default='com.victronenergy.grid')
@@ -135,7 +163,9 @@ def main():
 	# Have a mainloop, so we can send/receive asynchronous calls to and from dbus
 	DBusGMainLoop(set_as_default=True)
 
-	meter = EnergyMeter(args.servicebase, args.host)
+	zeroconf = Zeroconf()
+	listener = Listener(args.servicebase)
+	browser = ServiceBrowser(zeroconf, "_hwenergy._tcp.local.", listener)
 
 	# Start and run the mainloop
 	mainloop = GLib.MainLoop()
