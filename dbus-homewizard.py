@@ -6,6 +6,7 @@ import requests
 import sys
 
 from argparse import ArgumentParser
+from datetime import datetime
 from dbus.mainloop.glib import DBusGMainLoop
 from gi.repository import GLib
 
@@ -61,6 +62,7 @@ class EnergyMeter(object):
 		_w = lambda p, v: (str(v) + 'W')
 		_v = lambda p, v: (str(v) + 'V')
 		_m3 = lambda p, v: (str(v) + 'm3')
+		_timestamp = lambda p, v: (str(datetime.fromtimestamp(v)))
 
 		# Grid data
 		service.add_path('/Ac/Energy/Forward', None, gettextcallback=_kwh)
@@ -86,7 +88,7 @@ class EnergyMeter(object):
 		service.add_path('/Meter/Model', None)
 		service.add_path('/Meter/Version', None)
 		service.add_path('/Gas/Usage', None, gettextcallback=_m3)
-		service.add_path('/Gas/Timestamp', None)
+		service.add_path('/Gas/Timestamp', None, gettextcallback=_timestamp)
 
 		GLib.timeout_add(1000, exit_on_error, self._handletimertick)
 
@@ -103,6 +105,7 @@ class EnergyMeter(object):
 	def update(self, json):
 		forward = json['total_power_import_t1_kwh'] + json['total_power_import_t2_kwh']
 		reverse = json['total_power_export_t1_kwh'] + json['total_power_export_t2_kwh']
+		gas_timestamp = datetime.strptime(str(json['gas_timestamp']), '%y%m%d%H%M%S')
 		self.set_path('/Ac/Energy/Forward', forward)
 		self.set_path('/Ac/Energy/Reverse', reverse)
 		self.set_path('/Ac/L1/Energy/Forward', forward)
@@ -112,7 +115,7 @@ class EnergyMeter(object):
 		self.set_path('/Ac/L2/Power', json['active_power_l2_w'])
 		self.set_path('/Ac/L3/Power', json['active_power_l3_w'])
 		self.set_path('/Gas/Usage', json['total_gas_m3'])
-		self.set_path('/Gas/Timestamp', json['gas_timestamp'])
+		self.set_path('/Gas/Timestamp', int(gas_timestamp.strftime('%s')))
 		self.set_path('/Meter/Model', json['meter_model'])
 		self.set_path('/Meter/Version', json['smr_version'])
 
