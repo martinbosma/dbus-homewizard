@@ -101,8 +101,12 @@ class EnergyMeter(object):
 			self.service[path] = value
 
 	def update(self, json):
-		self.set_path('/Ac/Energy/Forward', json['total_power_import_t1_kwh'] + json['total_power_import_t2_kwh'])
-		self.set_path('/Ac/Energy/Reverse', json['total_power_export_t1_kwh'] + json['total_power_export_t2_kwh'])
+		forward = json['total_power_import_t1_kwh'] + json['total_power_import_t2_kwh']
+		reverse = json['total_power_export_t1_kwh'] + json['total_power_export_t2_kwh']
+		self.set_path('/Ac/Energy/Forward', forward)
+		self.set_path('/Ac/Energy/Reverse', reverse)
+		self.set_path('/Ac/L1/Energy/Forward', forward)
+		self.set_path('/Ac/L1/Energy/Reverse', reverse)
 		self.set_path('/Ac/Power', json['active_power_w'])
 		self.set_path('/Ac/L1/Power', json['active_power_l1_w'])
 		self.set_path('/Ac/L2/Power', json['active_power_l2_w'])
