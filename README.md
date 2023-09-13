@@ -1,3 +1,7 @@
+## DISCLAIMER
+This is a personal project, far from finished and not officially supported by Victron Energy.\
+The project is outdated and has not been maintained for quite some time.
+
 # dbus-homewizard
 
 This application reads data from a HomeWizard energy monitor and turns it into a grid meter service on dbus. 
